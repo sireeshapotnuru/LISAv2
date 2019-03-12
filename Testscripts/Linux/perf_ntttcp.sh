@@ -86,7 +86,7 @@ Run_SSHCommand()
 	for ip in "${array[@]}"
 	do
 		LogMsg "Execute ${cmd} on ${ip}"
-		ssh "${ip}" "${cmd}"
+		ssh -q "${ip}" "${cmd}"
 	done
 }
 
@@ -290,13 +290,13 @@ Run_Ntttcp()
 		Kill_Process "${server}" ntttcp
 		Kill_Process "${client}" ntttcp
 		LogMsg "ServerCmd: $server_ntttcp_cmd > ./$log_folder/ntttcp-${rx_log_prefix}"
-		ssh "${server}" "${server_ntttcp_cmd}" > "./$log_folder/ntttcp-${rx_log_prefix}" &
+		ssh -q "${server}" "${server_ntttcp_cmd}" > "./$log_folder/ntttcp-${rx_log_prefix}" &
 		Kill_Process "${server}" lagscope
 		Run_SSHCommand "${server}" "${lagscope_cmd} -r" &
 		Kill_Process "${server}" dstat
-		Run_SSHCommand "${server}" "${dstat_cmd} -dam" > "./$log_folder/dstat-${rx_log_prefix}" &
+		Run_SSHCommand "${server}" "${dstat_cmd} -dam" > "/dev/null" &
 		Kill_Process "${server}" mpstat
-		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "./$log_folder/mpstat-${rx_log_prefix}" &
+		Run_SSHCommand "${server}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "/dev/null" &
 
 		sleep 2
 		IFS=',' read -r -a array <<< "${client}"
@@ -306,10 +306,10 @@ Run_Ntttcp()
 			Kill_Process "${ip}" dstat
 			Kill_Process "${ip}" mpstat
 			Kill_Process "${ip}" lagscope
-			ssh "${ip}" "${sar_cmd} -n DEV 1 ${testDuration}" > "./$log_folder/sar-${ip}-${tx_log_prefix}" &
-			ssh "${ip}" "${dstat_cmd} -dam" > "./$log_folder/dstat-${ip}-${tx_log_prefix}" &
-			ssh "${ip}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "./$log_folder/mpstat-${ip}-${tx_log_prefix}" &
-			ssh "${ip}" "${lagscope_cmd} -s${server} -t ${testDuration}" -V > "./$log_folder/lagscope-${ip}-${tx_log_prefix}" &
+			ssh -q "${ip}" "${sar_cmd} -n DEV 1 ${testDuration}" > "/dev/null" &
+			ssh -q "${ip}" "${dstat_cmd} -dam" > "/dev/null" &
+			ssh -q "${ip}" "${mpstat_cmd} -P ALL 1 ${testDuration}" > "/dev/null" &
+			ssh -q "${ip}" "${lagscope_cmd} -s${server} -t ${testDuration}" -V > "/dev/null" &
 			tx_lagscope_log_files+=("./$log_folder/lagscope-${ip}-${tx_log_prefix}")
 		done
 
@@ -320,17 +320,17 @@ Run_Ntttcp()
 			for ip in "${array[@]:0:$index}"
 			do
 				LogMsg "Execute ${client_ntttcp_cmd} on ${ip}"
-				ssh "${ip}" "${client_ntttcp_cmd}" > "./${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
+				ssh -q "${ip}" "${client_ntttcp_cmd}" > "./${log_folder}/ntttcp-${ip}-${tx_log_prefix}" &
 				tx_ntttcp_log_files+=("./${log_folder}/ntttcp-${ip}-${tx_log_prefix}")
 				sleep 5
 			done
 			client_ntttcp_cmd+=" -L"
 			LogMsg "Execute ${client_ntttcp_cmd} on ${array[$(($index))]}"
-			ssh "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "./${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
+			ssh -q "${array[$(($index))]}" "${client_ntttcp_cmd}"  > "./${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}"
 			tx_ntttcp_log_files+=("./${log_folder}/ntttcp-${array[$(($index))]}-${tx_log_prefix}")
 		else
 			LogMsg "Execute ${client_ntttcp_cmd} on ${client}"
-			ssh "${client}" "${client_ntttcp_cmd}" > "./${log_folder}/ntttcp-${tx_log_prefix}"
+			ssh -q "${client}" "${client_ntttcp_cmd}" > "./${log_folder}/ntttcp-${tx_log_prefix}"
 			tx_ntttcp_log_files="./${log_folder}/ntttcp-${tx_log_prefix}"
 		fi
 		LogMsg "Parsing results for $current_test_threads connections"
