@@ -58,6 +58,8 @@ for module in "${HYPERV_MODULES[@]}"; do
 done
 HYPERV_MODULES=("${tempList[@]}")
 
+skipNext=true
+temp_version=''
 # Verifies first if the modules are loaded
 for module in "${HYPERV_MODULES[@]}"; do
     load_status=$(lsmod | grep "$module" 2>&1)
@@ -68,6 +70,16 @@ for module in "${HYPERV_MODULES[@]}"; do
             if rpm -qa | grep hyper-v 2>/dev/null; then
                 version=$(modinfo "$module" | grep version: | head -1 | awk '{print $2}')
                 LogMsg "$module module: ${version}"
+                if [ "$skipNext" = true ] ; then
+                    temp_version=$version
+                    skipNext=false
+                    continue
+                fi
+                if [ "$temp_version" != "$version" ] ;then
+                    LogErr "ERROR: Status: $module $version doesnot match with build version $temp_version"
+                    SetTestStateAborted
+                    exit 0
+                fi
                 continue
             fi
         fi
@@ -82,6 +94,80 @@ for module in "${HYPERV_MODULES[@]}"; do
         fi
     fi
 done
+
+# Check to see if pci_hyperv module is getting loaded for RH7.x
+if [[ $DISTRO_VERSION =~ 7\. ]]; then
+    if rpm -qa | grep hyper-v 2>/dev/null; then
+        pci_module=$(lsmod | grep pci_hyperv)
+        if [ -z $pci_module ]; then
+            modprobe pci_hyperv
+            if [ 0 -ne $? ]; then
+                LogErr "Unable to load pci_hyperv module!"
+                SetTestStateAborted
+                exit 0
+            else
+                pci_load_module=$(grep -rnw '/var/log' -e "hv_vmbus: registering driver hv_pci" --ignore-case)
+                if [ -z $pci_load_module ]; then
+                    LogErr  "ERROR: Status: pci_hyperv is not loaded"
+                    SetTestStateAborted
+                    exit 0
+                else
+                    LogMsg  "Status: pci_hyperv loaded!"
+                    version=$(modinfo pci_hyperv | grep version: | head -1 | awk '{print $2}')
+                    LogMsg "pci_hyperv module: ${version}"
+                    if [ "$temp_version" != "$version" ] ;then
+                        LogErr "ERROR: Status: pci_hyperv $version doesnot match with build version $temp_version"
+                        SetTestStateAborted
+                        exit 0
+                    fi
+                fi
+            fi
+        else
+            LogMsg  "Status: pci_hyperv loaded!"
+            version=$(modinfo pci_hyperv | grep version: | head -1 | awk '{print $2}')
+            LogMsg "pci_hyperv module: ${version}"
+            if [ "$temp_version" != "$version" ] ;then
+                LogErr "ERROR: Status: pci_hyperv $version doesnot match with build version $temp_version"
+                SetTestStateAborted
+                exit 0
+            fi
+        fi
+    fi
+fi
+
+# Check to see if mlx4 is getting loaded for RH7.3 and RH7.4
+if [[ $DISTRO_VERSION =~ 7\.3 ]] || [[ $DISTRO_VERSION =~ 7\.4 ]] ; then
+    if rpm -qa | grep hyper-v 2>/dev/null; then
+        mlx4_module=$(lsmod | grep mlx4_en)
+        if [ -z $mlx4_module ]; then
+            modprobe mlx4_en
+            lsmod | grep mlx4_en
+            if [ 0 -ne $? ]; then
+                LogErr  "ERROR: Status: mlx4_en is not loaded"
+                SetTestStateAborted
+                exit 0
+            else
+                LogMsg  "Status: mlx4_en loaded!"
+                version=$(modinfo mlx4_en | grep version: | head -1 | awk '{print $2}')
+                LogMsg "mlx4_en module: ${version}"
+                if [ "$MLNX_VERSION" != "$version" ] ;then
+                    LogErr "ERROR: Status: mlx4_en $version doesnot match with build version $MLNX_VERSION"
+                    SetTestStateAborted
+                    exit 0
+                fi
+            fi
+        else
+            LogMsg  "Status: mlx4_en loaded!"
+            version=$(modinfo mlx4_en | grep version: | head -1 | awk '{print $2}')
+            LogMsg "mlx4_en module: ${version}"
+            if [ "$MLNX_VERSION" != "$version" ] ;then
+                LogErr "ERROR: Status: mlx4_en $version doesnot match with build version $MLNX_VERSION"
+                SetTestStateAborted
+                exit 0
+            fi
+        fi
+    fi
+fi
 
 SetTestStateCompleted
 exit 0

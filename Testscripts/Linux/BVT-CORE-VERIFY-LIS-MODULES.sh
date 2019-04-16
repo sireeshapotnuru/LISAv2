@@ -39,6 +39,48 @@ for module in "${HYPERV_MODULES[@]}"; do
     echo -ne "\\n\\n"
 done
 
+# Check to see if pci_hyperv module is getting loaded for RH7.x
+if [[ $DISTRO_VERSION =~ 7\. ]]; then
+    if rpm -qa | grep hyper-v 2>/dev/null; then
+        pci_module=$(lsmod | grep pci_hyperv)
+        if [ -z $pci_module ]; then
+            modprobe pci_hyperv
+            if [ 0 -ne $? ]; then
+                LogMsg "Unable to load pci_hyperv module!"
+                PASS="1"
+            else
+                pci_load_module=$(grep -rnw '/var/log' -e "hv_vmbus: registering driver hv_pci" --ignore-case)
+                if [ -z $pci_load_module ]; then
+                    LogMsg  "ERROR: Status: pci_hyperv is not loaded"
+                    PASS="1"
+                else
+                    LogMsg  "Status: pci_hyperv loaded!"
+                fi
+            fi
+        else
+            LogMsg  "Status: pci_hyperv loaded!"
+        fi
+    fi
+fi
+
+# Check to see if mlx4 is getting loaded for RH7.3 and RH7.4
+if [[ $DISTRO_VERSION =~ 7\.3 ]] || [[ $DISTRO_VERSION =~ 7\.4 ]] ; then
+    if rpm -qa | grep hyper-v 2>/dev/null; then
+        mlx4_module=$(lsmod | grep mlx4_en)
+        if [ -z $mlx4_module ]; then
+            modprobe mlx4_en
+            lsmod | grep mlx4_en
+            if [ 0 -ne $? ]; then
+                LogMsg  "ERROR: Status: mlx4_en is not loaded"
+                PASS="1"
+            else
+                LogMsg  "Status: mlx4_en loaded!"
+            fi
+        else
+            LogMsg  "Status: mlx4_en loaded!"
+        fi
+    fi
+fi
 #
 # Let the caller know everything worked
 #

@@ -227,6 +227,7 @@
         <setupType>OneVM</setupType>
         <TestParameters>
             <param>HYPERV_MODULES=(hv_vmbus hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hv_balloon)</param>
+            <param>MLNX_VERSION=EXPECTED_MLNX_VERSION</param>
         </TestParameters>
         <Platform>Azure,HyperV</Platform>
         <Category>BVT</Category>
