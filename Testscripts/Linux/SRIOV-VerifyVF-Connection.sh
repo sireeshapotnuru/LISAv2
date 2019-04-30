@@ -72,7 +72,13 @@ while [ $__iterator -le "$vf_count" ]; do
 
     synthetic_interface_vm_1=$(ip addr | grep $static_IP_1 | awk '{print $NF}')
     LogMsg  "Synthetic interface found: $synthetic_interface_vm_1"
-    vf_interface_vm_1=$(find /sys/devices/* -name "*${synthetic_interface_vm_1}" | grep "pci" | sed 's/\// /g' | awk '{print $12}')
+    if [[ $DISTRO_VERSION =~ 6\. ]]; then
+        synthetic_MAC=$(ip link show ${synthetic_interface_vm_1} | grep ether | awk '{print $2}')
+        testInterface=$(grep -il ${synthetic_MAC} /sys/class/net/*/address | grep -v $synthetic_interface_vm_1)
+        vf_interface_vm_1=$(basename "$(dirname "$testInterface")")
+    else
+        vf_interface_vm_1=$(find /sys/devices/* -name "*${synthetic_interface_vm_1}" | grep "pci" | sed 's/\// /g' | awk '{print $12}')
+    fi
     LogMsg "Virtual function found: $vf_interface_vm_1"
 
     # Ping the remote host
@@ -106,7 +112,15 @@ while [ $__iterator -le "$vf_count" ]; do
     # Get the VF name from VM2
     cmd_to_send="ip addr | grep \"$static_IP_2\" | awk '{print \$NF}'"
     synthetic_interface_vm_2=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$cmd_to_send")
-    cmd_to_send="find /sys/devices/* -name "*${synthetic_interface_vm_2}" | grep pci | sed 's/\// /g' | awk '{print \$12}'"
+    if [[ $DISTRO_VERSION =~ 6\. ]]; then
+        synthetic_MAC_command=$(ip link show ${synthetic_interface_vm_2} | grep ether | awk '{print $2}')
+        synthetic_MAC=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$synthetic_MAC_command")
+        testInterface_commad=$(grep -il ${synthetic_MAC} /sys/class/net/*/address | grep -v $synthetic_interface_vm_2)
+        testInterface=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$testInterface_commad")
+        cmd_to_send=$(basename "$(dirname "$testInterface")")
+    else
+        cmd_to_send="find /sys/devices/* -name "*${synthetic_interface_vm_2}" | grep pci | sed 's/\// /g' | awk '{print \$12}'"
+    fi
     vf_interface_vm_2=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" "$cmd_to_send")
 
     rx_value=$(ssh -i "$HOME"/.ssh/"$SSH_PRIVATE_KEY" -o StrictHostKeyChecking=no "$remote_user"@"$static_IP_2" cat /sys/class/net/"${vf_interface_vm_2}"/statistics/rx_packets)

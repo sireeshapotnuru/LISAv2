@@ -77,7 +77,13 @@ VerifyVF()
         vf_interface=$(ls /sys/class/net/ | grep -v 'eth0\|eth1\|lo' | head -1)
     else
         synthetic_interface=$(ip addr | grep "$VF_IP1" | awk '{print $NF}')
-        vf_interface=$(find /sys/devices/* -name "*${synthetic_interface}" | grep "pci" | sed 's/\// /g' | awk '{print $12}')
+        if [[ $DISTRO_VERSION =~ 6\. ]]; then
+            synthetic_MAC=$(ip link show ${synthetic_interface} | grep ether | awk '{print $2}')
+            testInterface=$(grep -il ${synthetic_MAC} /sys/class/net/*/address | grep -v $synthetic_interface)
+            vf_interface=$(basename "$(dirname "$testInterface")")
+        else
+            vf_interface=$(find /sys/devices/* -name "*${synthetic_interface}" | grep "pci" | sed 's/\// /g' | awk '{print $12}')
+        fi
     fi
 
     ip addr show "$vf_interface"
