@@ -176,7 +176,20 @@ CreateRAID0()
 
 ConfigNVME()
 {
-	install_package "nvme-cli"
+    if [ $DISTRO_NAME == "centos" ] || [ $DISTRO_NAME == "rhel" ] || [ $DISTRO_NAME == "oracle" ]; then
+        if [[ $DISTRO_VERSION =~ ^6\. ]]; then
+            yum -y groupinstall "Development Tools"
+            wget https://github.com/linux-nvme/nvme-cli/archive/${nvme_version}.tar.gz
+            tar xvf ${nvme_version}.tar.gz
+            pushd nvme-cli-${nvme_version/v/} && make && make install
+            popd
+            yes | cp -f /usr/local/sbin/nvme /sbin
+        else
+            install_package "nvme-cli"
+        fi
+    else
+        install_package "nvme-cli"
+    fi
 	namespace_list=$(ls -l /dev | grep -w nvme[0-9]n[0-9]$ | awk '{print $10}')
 	nvme_namespaces=""
 	for namespace in ${namespace_list}; do
