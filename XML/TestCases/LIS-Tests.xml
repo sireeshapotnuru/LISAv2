@@ -21,6 +21,7 @@
         <TestParameters>
             <param>LIS_TARBALL_URL_CURRENT=LIS_CURRENT_URL</param>
         </TestParameters>
+        <Timeout>1800</Timeout>
         <Area>LIS_DEPLOY</Area>
         <Tags>lis</Tags>
         <Priority>1</Priority>
