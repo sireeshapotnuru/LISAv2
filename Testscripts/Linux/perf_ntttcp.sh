@@ -92,7 +92,7 @@ Run_SSHCommand()
 
 # Make & build ntttcp on client and server Machine
 LogMsg "Configuring client ${client}..."
-Run_SSHCommand "${client}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion}"
+Run_SSHCommand "${client}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${client}.."
 	UpdateTestState "TestAborted"
@@ -100,7 +100,7 @@ if [ $? -ne 0 ]; then
 fi
 
 LogMsg "Configuring server ${server}..."
-Run_SSHCommand "${server}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion}"
+Run_SSHCommand "${server}" ". $UTIL_FILE && install_ntttcp ${ntttcpVersion} ${lagscopeVersion}"
 if [ $? -ne 0 ]; then
 	LogMsg "Error: ntttcp installation failed in ${server}.."
 	UpdateTestState "TestAborted"
